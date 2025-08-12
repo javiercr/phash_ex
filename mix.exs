@@ -10,18 +10,18 @@ defmodule Mix.Tasks.Compile.PHash do
     # Initialize pHash library if not already present
     unless File.exists?("c_lib/pHash/CMakeLists.txt") do
       IO.puts("pHash library not found, downloading...")
-      
+
       # Try git submodule first (for development)
       case System.cmd("git", ["submodule", "update", "--init", "--recursive"]) do
-        {_, 0} -> 
+        {_, 0} ->
           IO.puts("Successfully initialized git submodules")
         _ ->
           # Fallback: download pHash library directly
           IO.puts("Git submodules not available, downloading pHash library directly...")
           # Use the latest stable commit (Sep 2022) which includes important CMake fixes
-          phash_commit = "dea9ffca729841db087f46a7389dd8610a629dc6" 
+          phash_commit = "dea9ffca729841db087f46a7389dd8610a629dc6"
           phash_url = "https://github.com/aetilius/pHash/archive/#{phash_commit}.zip"
-          
+
           with {_, 0} <- System.cmd("curl", ["-L", "-o", "/tmp/phash.zip", phash_url]),
                {_, 0} <- System.cmd("unzip", ["-o", "/tmp/phash.zip", "-d", "/tmp/"]),
                :ok <- File.rm_rf("c_lib/pHash"),
@@ -58,10 +58,11 @@ defmodule Mix.Tasks.Compile.PHash do
           [
             "-DCMAKE_BUILD_TYPE=Release",
             "-DBUILD_SHARED_LIBS=FALSE",
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             "."
           ]
         else
-          ["-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=FALSE", "."]
+          ["-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=FALSE", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "."]
         end
 
       erlang_root =
