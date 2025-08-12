@@ -132,6 +132,9 @@ defmodule Mix.Tasks.Compile.PHash do
           ]
         end
 
+      IO.puts("CMake arguments: #{inspect(cmake_args)}")
+      IO.puts("CMake environment: #{inspect(cmake_env)}")
+
       with {_, 0} <-
              System.cmd(
                "cmake",
