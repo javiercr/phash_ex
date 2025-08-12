@@ -18,12 +18,14 @@ defmodule Mix.Tasks.Compile.PHash do
         _ ->
           # Fallback: download pHash library directly
           IO.puts("Git submodules not available, downloading pHash library directly...")
-          phash_url = "https://github.com/aetilius/pHash/archive/refs/heads/master.zip"
+          # Use the latest stable commit (Sep 2022) which includes important CMake fixes
+          phash_commit = "dea9ffca729841db087f46a7389dd8610a629dc6" 
+          phash_url = "https://github.com/aetilius/pHash/archive/#{phash_commit}.zip"
           
           with {_, 0} <- System.cmd("curl", ["-L", "-o", "/tmp/phash.zip", phash_url]),
                {_, 0} <- System.cmd("unzip", ["-o", "/tmp/phash.zip", "-d", "/tmp/"]),
                :ok <- File.rm_rf("c_lib/pHash"),
-               {_, 0} <- System.cmd("mv", ["/tmp/pHash-master", "c_lib/pHash"]),
+               {_, 0} <- System.cmd("mv", ["/tmp/pHash-#{phash_commit}", "c_lib/pHash"]),
                :ok <- File.rm("/tmp/phash.zip") do
             IO.puts("Successfully downloaded pHash library")
           else
