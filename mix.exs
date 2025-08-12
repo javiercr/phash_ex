@@ -80,10 +80,11 @@ defmodule Mix.Tasks.Compile.PHash do
             "-DCMAKE_INCLUDE_PATH=#{homebrew_prefix}/include",
             "-DCMAKE_EXE_LINKER_FLAGS=-L#{homebrew_prefix}/lib",
             "-DCMAKE_SHARED_LINKER_FLAGS=-L#{homebrew_prefix}/lib",
+            "-Wno-dev",  # Suppress developer warnings
             "."
           ]
         else
-          ["-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=FALSE", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "."]
+          ["-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=FALSE", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "-Wno-dev", "."]
         end
 
       erlang_root =
@@ -93,6 +94,7 @@ defmodule Mix.Tasks.Compile.PHash do
         if :os.type() == {:unix, :darwin} do
           [
             "phash_nifs.cpp",
+            "-w",  # Suppress all warnings
             "-I#{erlang_root}/include",
             "-I#{brew_prefix("libpng")}/include",
             "-I#{brew_prefix("jpeg")}/include",
@@ -117,6 +119,7 @@ defmodule Mix.Tasks.Compile.PHash do
         else
           [
             "phash_nifs.cpp",
+            "-w",  # Suppress all warnings
             "-I#{erlang_root}/include",
             "-IpHash/src",
             "-IpHash/third-party/CImg",
@@ -132,8 +135,7 @@ defmodule Mix.Tasks.Compile.PHash do
           ]
         end
 
-      IO.puts("CMake arguments: #{inspect(cmake_args)}")
-      IO.puts("CMake environment: #{inspect(cmake_env)}")
+      IO.puts("Compiling pHash library...")
 
       with {_, 0} <-
              System.cmd(
@@ -141,8 +143,7 @@ defmodule Mix.Tasks.Compile.PHash do
                cmake_args,
                cd: "c_lib/pHash",
                env: cmake_env,
-               stderr_to_stdout: true,
-               into: IO.stream(:stdio, :line)
+               stderr_to_stdout: true
              ),
            {_, 0} <-
              System.cmd(
@@ -150,20 +151,19 @@ defmodule Mix.Tasks.Compile.PHash do
                ["--build", ".", "--target", "pHash"],
                cd: "c_lib/pHash",
                env: cmake_env,
-               stderr_to_stdout: true,
-               into: IO.stream(:stdio, :line)
+               stderr_to_stdout: true
              ),
            File.cp!(
              "c_lib/pHash/Release/libpHash.1.0.0#{shared_lib_ext()}",
              "#{priv}/libpHash.1.0.0#{shared_lib_ext()}"
            ),
+           _ <- IO.puts("Compiling NIF bindings..."),
            {_, 0} <-
              System.cmd(
                "g++",
                gpp_args,
                cd: "c_lib",
-               stderr_to_stdout: true,
-               into: IO.stream(:stdio, :line)
+               stderr_to_stdout: true
              ),
             File.ln_s(
                 "phash_nifs#{shared_lib_ext()}",
