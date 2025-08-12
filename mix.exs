@@ -56,13 +56,12 @@ defmodule Mix.Tasks.Compile.PHash do
       cmake_args =
         if :os.type() == {:unix, :darwin} do
           [
-            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             "-DCMAKE_BUILD_TYPE=Release",
             "-DBUILD_SHARED_LIBS=FALSE",
             "."
           ]
         else
-          ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=FALSE", "."]
+          ["-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=FALSE", "."]
         end
 
       erlang_root =
