@@ -7,6 +7,32 @@ defmodule Mix.Tasks.Compile.PHash do
   def run(_args) do
     priv = Path.join(__DIR__, "priv/")
 
+    # Initialize pHash library if not already present
+    unless File.exists?("c_lib/pHash/CMakeLists.txt") do
+      IO.puts("pHash library not found, downloading...")
+      
+      # Try git submodule first (for development)
+      case System.cmd("git", ["submodule", "update", "--init", "--recursive"]) do
+        {_, 0} -> 
+          IO.puts("Successfully initialized git submodules")
+        _ ->
+          # Fallback: download pHash library directly
+          IO.puts("Git submodules not available, downloading pHash library directly...")
+          phash_url = "https://github.com/aetilius/pHash/archive/refs/heads/master.zip"
+          
+          with {_, 0} <- System.cmd("curl", ["-L", "-o", "/tmp/phash.zip", phash_url]),
+               {_, 0} <- System.cmd("unzip", ["-o", "/tmp/phash.zip", "-d", "/tmp/"]),
+               :ok <- File.rm_rf("c_lib/pHash"),
+               {_, 0} <- System.cmd("mv", ["/tmp/pHash-master", "c_lib/pHash"]),
+               :ok <- File.rm("/tmp/phash.zip") do
+            IO.puts("Successfully downloaded pHash library")
+          else
+            _ ->
+              raise "Failed to download pHash library. Please ensure curl and unzip are available, or clone the repository with submodules."
+          end
+      end
+    end
+
     files = [
       {"c_lib/pHash/src/pHash.cpp", "#{priv}/libpHash.1.0.0#{shared_lib_ext()}"},
       {"c_lib/phash_nifs.cpp", "#{priv}/phash_nifs#{shared_lib_ext()}"}
@@ -24,6 +50,7 @@ defmodule Mix.Tasks.Compile.PHash do
       )
 
     if should_rebuild do
+
       cmake_args =
         if :os.type() == {:unix, :darwin} do
           [
