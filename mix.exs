@@ -53,12 +53,29 @@ defmodule Mix.Tasks.Compile.PHash do
 
     if should_rebuild do
 
+      cmake_env =
+        if :os.type() == {:unix, :darwin} do
+          homebrew_prefix = String.trim(elem(System.cmd("brew", ["--prefix"]), 0))
+          [
+            {"LDFLAGS", "-L#{homebrew_prefix}/lib"},
+            {"CPPFLAGS", "-I#{homebrew_prefix}/include"}
+          ]
+        else
+          []
+        end
+
       cmake_args =
         if :os.type() == {:unix, :darwin} do
+          homebrew_prefix = String.trim(elem(System.cmd("brew", ["--prefix"]), 0))
           [
             "-DCMAKE_BUILD_TYPE=Release",
             "-DBUILD_SHARED_LIBS=FALSE",
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+            "-DCMAKE_PREFIX_PATH=#{homebrew_prefix}",
+            "-DCMAKE_LIBRARY_PATH=#{homebrew_prefix}/lib",
+            "-DCMAKE_INCLUDE_PATH=#{homebrew_prefix}/include",
+            "-DCMAKE_EXE_LINKER_FLAGS=-L#{homebrew_prefix}/lib",
+            "-DCMAKE_SHARED_LINKER_FLAGS=-L#{homebrew_prefix}/lib",
             "."
           ]
         else
@@ -116,6 +133,7 @@ defmodule Mix.Tasks.Compile.PHash do
                "cmake",
                cmake_args,
                cd: "c_lib/pHash",
+               env: cmake_env,
                stderr_to_stdout: true,
                into: IO.stream(:stdio, :line)
              ),
@@ -124,6 +142,7 @@ defmodule Mix.Tasks.Compile.PHash do
                "cmake",
                ["--build", ".", "--target", "pHash"],
                cd: "c_lib/pHash",
+               env: cmake_env,
                stderr_to_stdout: true,
                into: IO.stream(:stdio, :line)
              ),
