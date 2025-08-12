@@ -52,10 +52,15 @@ defmodule Mix.Tasks.Compile.PHash do
       )
 
     if should_rebuild do
+      # Get homebrew prefix once for macOS
+      homebrew_prefix = if :os.type() == {:unix, :darwin} do
+        String.trim(elem(System.cmd("brew", ["--prefix"]), 0))
+      else
+        nil
+      end
 
       cmake_env =
-        if :os.type() == {:unix, :darwin} do
-          homebrew_prefix = String.trim(elem(System.cmd("brew", ["--prefix"]), 0))
+        if homebrew_prefix do
           [
             {"LDFLAGS", "-L#{homebrew_prefix}/lib"},
             {"CPPFLAGS", "-I#{homebrew_prefix}/include"}
@@ -65,8 +70,7 @@ defmodule Mix.Tasks.Compile.PHash do
         end
 
       cmake_args =
-        if :os.type() == {:unix, :darwin} do
-          homebrew_prefix = String.trim(elem(System.cmd("brew", ["--prefix"]), 0))
+        if homebrew_prefix do
           [
             "-DCMAKE_BUILD_TYPE=Release",
             "-DBUILD_SHARED_LIBS=FALSE",
